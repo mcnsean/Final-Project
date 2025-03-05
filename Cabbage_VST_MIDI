@@ -1,0 +1,39 @@
+<Cabbage> bounds(0, 0, 0, 0)
+form caption("SYNTH") size(600, 400), guiMode("queue"), pluginId("def1")
+keyboard bounds(4, 312, 579, 86) channel("freq")
+rslider bounds(6, 12, 60, 60) channel("attack") range(0, 1, 0, 1, 0.001) text("attack")
+xypad bounds(282, 2, 303, 307) channel("freq", "res")   text("FREQUENCY/RESONANCE") rangeX(0, 1, 0) rangeY(0, 1, 0)
+vslider bounds(4, 66, 50, 150) channel("volume") range(0, 1, 0, 1, 0.001)
+button bounds(114, 110, 80, 40) channel("on/off") text("off", "on") colour:0(255, 0, 0, 255)
+</Cabbage>
+<CsoundSynthesizer>
+<CsOptions>
+-n -d -+rtmidi=NULL -M0 --midi-key-cps=5 --midi-velocity-amp=4
+</CsOptions>
+<CsInstruments>
+ksmps = 32
+nchnls = 2
+0dbfs=1
+
+instr 1
+ icf_max = 10000
+ icf_min = 100
+ iq = 10
+ kfreq = p5
+ iatt chnget "attack"
+ kenv madsr iatt+.001, .01, .8, .1
+ kcf = kenv*(icf_max - icf_min) + icf_min
+ kamp = kenv*p4*.2
+ kfr chnget "freq"
+ krs chnget "res"
+ a1     vco2 kamp,kfreq
+ a2     lpf18 a1, kcf*kfr, krs, .5
+ kvol chnget "volume"
+ kon chnget "on/off"
+    out a2*kvol*kon
+   
+endin
+</CsInstruments>
+<CsScore>
+</CsScore>
+</CsoundSynthesizer>
