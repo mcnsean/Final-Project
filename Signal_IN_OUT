@@ -1,0 +1,33 @@
+<CsoundSynthesizer>
+<CsOptions>
+-odac:    ; Output to default output
+-idac:"AudioBox Go"  ; Input from interface
+-nchnls_i=2   
+
+</CsOptions>
+
+<CsInstruments>
+
+instr 1
+    ; Read input from channel 2
+    aGuitar inch 2           ; Input from channel 2
+
+    ; Monitor input signal level
+    printks "Input level: %f\n", 0.5, aGuitar
+
+    ; Amplify 
+    aOut = aGuitar * 5
+
+    ; Output to both output channels 
+    outs aOut, aOut
+
+endin
+
+</CsInstruments>
+
+<CsScore>
+i 1 0 z
+; Run for a very long time lol
+</CsScore>
+
+</CsoundSynthesizer>
