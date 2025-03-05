@@ -1,0 +1,39 @@
+<Cabbage>
+form caption("chorus") size(400, 300), guiMode("queue") pluginId("def1")
+rslider bounds(300, 8, 90, 87), channel("depth"), range(0, 1, 0, 1, 0.01), text("depth"), trackerColour(0, 255, 0, 255), outlineColour(0, 0, 0, 50), textColour(0, 0, 0, 255)
+
+rslider bounds(304, 110, 82, 84) channel("rate") range(0, 1, 0, 1, 0.001) text("rate")
+</Cabbage>
+<CsoundSynthesizer>
+<CsOptions>
+-n -d
+</CsOptions>
+<CsInstruments>
+; Initialize the global variables. 
+ksmps = 32
+nchnls = 2
+0dbfs = 1
+
+
+instr 1
+a1 inch 1
+a2 inch 2 
+
+kdep chnget "depth" 
+kfr chnget "rate" 
+
+alfo = oscili(0.005*kdep,5*kfr)
+ae1 flanger a1, alfo + .013, 0
+ae2 flanger a2, alfo + .021, 0
+out((ae2*.25+ae1*.75+a1)*.5, (ae1*.25+ae2*.75+a2)*.5)
+
+endin
+
+</CsInstruments>
+<CsScore>
+;causes Csound to run for about 7000 years...
+f0 z
+;starts instrument 1 and runs it for a week
+i1 0 [60*60*24*7] 
+</CsScore>
+</CsoundSynthesizer>
