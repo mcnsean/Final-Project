@@ -1,42 +1,44 @@
 <Cabbage>
 form caption("Untitled") size(400, 300), guiMode("queue") pluginId("def1")
-rslider bounds(296, 162, 100, 100), channel("gain"), range(0, 15, 0, 1, .01), text("Gain"), trackerColour("lime"), outlineColour(0, 0, 0, 50), textColour("black")
-rslider bounds(32, 40, 68, 70), channel("size"), range(0, 1, .2, 1, 0.001), text("Size"), colour(2, 132, 0, 255)
-rslider bounds(160, 40, 68, 70), channel("tone"), range(200, 5000, 1000, 1, 0.001), text("Tone"), colour(0, 128, 255, 255)
-
+rslider bounds(250, 50, 100, 100), channel("gain"), range(0, 15, 0, 1, 0.01), text("Gain"), trackerColour(0, 255, 0, 255), outlineColour(0, 0, 0, 50), textColour(0, 0, 0, 255)
+rslider bounds(40, 50, 100, 100), channel("level"), range(0, 10, 0.2, 1, 0.001), text("Level"), colour(255, 0, 0, 255), textColour(255, 248, 248, 255) fontColour(255, 255, 255, 255) outlineColour(0, 0, 0, 255) markerColour(111, 5, 5, 255) trackerColour(0, 255, 10, 255) 
+rslider bounds(158, 178, 100, 100), channel("tone"), range(200, 5000, 1000, 1, 0.001), text("Tone"), colour(0, 128, 255, 255) trackerColour(34, 255, 0, 255)
 </Cabbage>
 <CsoundSynthesizer>
 <CsOptions>
 -n -d
 </CsOptions>
 <CsInstruments>
-; Initialize the global variables.
+; Initialize the global variables. 
 ksmps = 32
 nchnls = 2
 0dbfs = 1
 
+
+
+
 instr 1
-    ; Generate a sine wave for testing
-    kFreq cabbageGetValue "tone"  ; Tone slider controls the frequency
-    a2 oscil 0.3, kFreq, 1  ; Generate a sine wave at the specified frequency (0.3 is amplitude)
+kGain cabbageGetValue "gain"
+kFdBack chnget "level"
+kTone cabbageGetValue "tone"
 
-    ; Apply some soft distortion (tanh)
-    a2dist tanh a2, 0.5  ; Apply tanh distortion with a threshold value of 0.5
+a1 inch 1
+a2 inch 2 
 
-    ; Output the distorted signal with gain control
-    outs a2dist * cabbageGetValue("gain"), a2dist * cabbageGetValue("gain")
+a2= a2*(.4)
+
+ares distort1 a2, 1, 1, kFdBack,kFdBack*(-1)
+a2filt tone ares, kTone
+
+outs (kGain+ares+a2filt),(kGain+ares+a2filt) ;removed tanh from this section for now
+
 endin
 
 </CsInstruments>
 <CsScore>
-; Causes Csound to run for about 7000 years...
+;causes Csound to run for about 7000 years...
 f0 z
-; Starts instrument 1 and runs it for a week
-i1 0 [60*60*24*7] 
-</CsScore>
-</CsoundSynthesizer>
-
-; Starts instrument 1 and runs it for a week
+;starts instrument 1 and runs it for a week
 i1 0 [60*60*24*7] 
 </CsScore>
 </CsoundSynthesizer>
