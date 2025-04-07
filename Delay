@@ -1,0 +1,41 @@
+<Cabbage>
+form size(300, 200), caption("Simple Delay"), pluginId("sdel")
+
+rslider bounds(20, 20, 120, 120), channel("delayTime"), range(0.05, 1.5, 0.5, 0.5, 0.01), text("Delay Time"), colour("lightblue")
+rslider bounds(160, 20, 120, 120), channel("feedback"), range(0.1, 0.99, 0.7, 1, 0.01), text("Feedback"), colour("lightblue")
+</Cabbage>
+
+<CsoundSynthesizer>
+<CsOptions>
+-n -d
+</CsOptions>
+<CsInstruments>
+sr = 44100
+ksmps = 32
+nchnls = 2
+0dbfs = 1
+
+instr 1
+   
+    a2 inch 2
+
+   
+    kDelayTime chnget "delayTime"
+    kFeedback chnget "feedback"
+;add portk for click removal
+;kDelayTime portk kDelayTime,0.01 
+;kFeedback portk kFeedback,0.01 
+ 
+    aDel delayr 14            
+    aFbk deltapi kDelayTime  
+           delayw a2 + (aFbk * kFeedback)
+ outs a2+ aFbk, a2 + aFbk
+endin
+</CsInstruments>
+<CsScore>
+;causes Csound to run for about 7000 years...
+f0 z
+;starts instrument 1 and runs it for a week
+i1 0 [60*60*24*7] 
+</CsScore>
+</CsoundSynthesizer>
