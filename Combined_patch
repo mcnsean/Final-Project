@@ -1,0 +1,159 @@
+<Cabbage>
+form size(900, 400), caption("Multi Effects"), guiMode("queue"), pluginId("efex")
+image bounds(0, 0, 900, 400) , file("speaker.jpg")
+;Gui paramaters
+; Distortion
+groupbox bounds(10, 10, 280, 250), text("Distortion"), plant("distort"), colour(0,0,0,0), outlineThickness(0), fontColour(0,0,0){
+checkbox bounds(110, 20, 80, 30), channel("distOnOff"),fontColour("black"),text("On/Off"), value(1), colour:1("green"), colour:0("red")
+    
+rslider bounds(40, 50, 100, 100), channel("distGain"), range(0, 10, 0, 1, 0.01),textColour("black"),text("Gain"),trackerColour("green")
+rslider bounds(160, 50, 100, 100), channel("distLevel"), range(0, 10, 0.2, 1, 0.001),textColour("black"), text("Level"), colour("white"),trackerColour("green")
+rslider bounds(100, 155, 100, 100), channel("distTone"), range(200, 5000, 1000, 1, 0.001),textColour("black"), text("Tone"), colour("white"),trackerColour("green")
+}
+
+;Delay
+groupbox bounds(310, 10, 280, 250), text("Delay"), plant("delay"),colour(0,0,0,0), outlineThickness(0), fontColour(0,0,0){
+checkbox bounds(110, 20, 80, 30), channel("delOnOff"),fontColour("black"), text("On/Off"), value(1), colour:1("green"), colour:0("red")
+rslider bounds(20, 50, 100, 100), channel("delTime"), range(0.05, 1.5, 0.5, 0.5, 0.01), textColour("black"),text("Delay Time"), colour("white"),trackerColour("green")
+rslider bounds(160, 50, 100, 100), channel("feedback"), range(0.1, 0.99, 0.7, 1, 0.01), textColour("black"),text("Feedback"), colour("white"),trackerColour("green")
+}
+
+;Reverb
+groupbox bounds(610, 10, 280, 250), text("Reverb"), plant("reverb"),colour(0,0,0,0), outlineThickness(0), fontColour(0,0,0){
+checkbox bounds(110, 20, 80, 30), channel("revOnOff"), fontColour("black"),text("On/Off"), value(1), colour:1("green"), colour:0("red")
+rslider bounds(40, 50, 100, 100), channel("revLvl"), range(0, 1, 0.5), textColour("black"),text("Dry/Wet"), colour("white"),trackerColour("green")
+
+rslider bounds(160, 50, 100, 100), channel("revFblvl"), range(0.5, 0.99, 0.85), textColour("black"),text("Level"), colour("white"),trackerColour("green")
+rslider bounds(100, 155, 100, 100), channel("revFco"), range(500, 10000, 3000), textColour("white"),text("Cut Off"), colour("white"),trackerColour("green")
+}
+
+;Master Vol
+rslider bounds(400, 270, 120, 120), channel("masterVol"), range(0, 1, 0.7),textColour("white"), text("Master volume"), colour("lightblue"),trackerColour("green")
+</Cabbage>
+
+<CsoundSynthesizer>
+<CsOptions>
+-n -d
+</CsOptions>
+<CsInstruments>
+sr = 44100
+ksmps = 32
+nchnls = 2
+0dbfs = 1
+
+
+
+;Changed individual instruments to user defined opcodes to call them all in one instr, refer back to https://flossmanual.csound.com/csound-language/user-defined-opcodes for help
+;dist udo
+opcode DistortSM, aa, aakkkk   ;in/out types (changed in/out to xin/xout as recommended on UDO page)
+aInL, aInR, kGain, kLevel, kTone, kOn xin  
+if kOn == 1 then
+aInL = aInL * kGain * 0.25
+aInR = aInR * kGain * 0.25
+        
+aresL distort1 aInL, 1, 1, kLevel, kLevel*(-1), 2
+aresR distort1 aInR, 1, 1, kLevel, kLevel*(-1), 2
+        
+aOutL tone aresL, kTone
+aOutR tone aresR, kTone
+else
+aOutL = aInL
+aOutR = aInR
+endif
+xout aOutL, aOutR
+endop 
+
+
+
+;delay udo
+opcode DelaySM, aa, aakkk
+aInL, aInR, kTime, kFeedback, kOn xin
+if kOn == 1 then
+aInL = tanh(aInL) 
+aInR = tanh(aInR) 
+        
+kRes linseg 0, 0.003, 1
+
+
+kFeedback portk kFeedback, kRes
+giDel = 30 ; Max delay time
+
+aDelL delayr giDel
+aFbkL deltapi kTime
+delayw aInL + (aFbkL * kFeedback)
+        
+aDelR delayr giDel
+aFbkR deltapi kTime
+delayw aInR + (aFbkR * kFeedback)
+        
+aOutL = aInL + aFbkL
+aOutR = aInR + aFbkR
+else
+aOutL = aInL
+aOutR = aInR
+endif
+xout aOutL, aOutR
+endop
+
+;reverb udo
+opcode ReverbSM, aa, aakkkk
+aInL, aInR, kLevel, kFblvl, kFco, kOn xin
+if kOn == 1 then
+aRevL, aRevR reverbsc aInL, aInR, kFblvl, kFco, sr, 0.1
+aOutL = (aInL * (1 - kLevel)) + (aRevL * kLevel)
+aOutR = (aInR * (1 - kLevel)) + (aRevR * kLevel)
+else
+aOutL = aInL
+aOutR = aInR
+endif
+xout aOutL, aOutR
+endop
+
+;instrument block where the udo's are called 
+instr 1
+SImpluseR cabbageGetFilePath "vox intern bright_u87.wav"
+    
+    
+aInL inch 2
+aInR inch 2
+    
+
+;Process distortion 
+kDistOn chnget "distOnOff"
+kDistGain chnget "distGain"
+kDistLevel chnget "distLevel"
+kDistTone chnget "distTone"
+aDistL, aDistR DistortSM aInL, aInR, kDistGain, kDistLevel, kDistTone, kDistOn
+  
+;Process delay
+kDelOn chnget "delOnOff"
+kDelTime chnget "delTime"
+kFeedback chnget "feedback"
+aDelL, aDelR DelaySM aDistL, aDistR, kDelTime, kFeedback, kDelOn
+    
+;Process reverb
+kRevOn chnget "revOnOff"
+kRevlevel chnget "revLvl"
+kRevFblvl chnget "revFblvl"
+kRevFco chnget "revFco"
+aRevL, aRevR ReverbSM aDelL, aDelR, kRevlevel, kRevFblvl, kRevFco, kRevOn
+    
+;Master Vol 
+kMasterVol chnget "masterVol"
+kMVfix linseg			0, 0.003, 1	
+kMasterVol portk kMasterVol, kMVfix
+aOutL = aRevL * kMasterVol
+aOutR = aRevR * kMasterVol
+
+
+;convolution
+aOutL pconvolve aOutL, "vox intern bright_u87.wav", 1024 	
+aOutR pconvolve aOutR, "vox intern bright_u87.wav", 1024 	
+outs aOutL, aOutR
+endin
+</CsInstruments>
+<CsScore>
+f0 z
+i1 0 z
+</CsScore>
+</CsoundSynthesizer>
